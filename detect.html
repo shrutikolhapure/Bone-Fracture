@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bone Fracture Detection</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            scroll-behavior: smooth;
+        }
+
+        .upload-section, .header-section {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            margin: 1rem auto;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .upload-section {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .image-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .image-wrapper {
+            flex: 1;
+            min-width: 300px;
+            max-width: 45%;
+            position: relative;
+            margin: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .image-container img, .image-container canvas {
+            width: 400px; /* Fixed width */
+            height: 400px; /* Fixed height */
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 144, 226, 0.1);
+        }
+
+        .image-label {
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
+
+        .result-section {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 0.5rem;
+        }
+
+        #progressBarContainer {
+            display: none;
+            position: relative;
+            width: 90%;
+            max-width: 400px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            margin: 1rem auto;
+        }
+
+        #progressBar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        #progressBar div {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        nav, .mobile-nav {
+            background-color: #004aad;
+            padding: 10px;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        nav a, .site-title {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.8rem 1rem;
+            }
+
+            .menu-toggle {
+                display: block;
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 0.5rem;
+            }
+
+            nav {
+                display: none;
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background: #004aad;
+                padding: 0;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            nav.active {
+                display: block;
+            }
+
+            nav a {
+                display: block;
+                padding: 1rem;
+                margin: 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                text-align: left;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-nav">
+        <div class="nav-container">
+            <a href="./index.html" class="site-title">Bone Fracture Detection</a>
+            <button class="menu-toggle" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
+    <nav>
+        <a href="./index.html">Home</a>
+        <a href="./about.html">About</a>
+        <a href="./detect.html">Detect</a>
+        <a href="./features.html">Features</a>
+    </nav>
+    <div id="uploadContainer">
+        <div class="header-section">
+            <h1>Bone Fracture Detection</h1>
+            <p class="description">
+                Upload an X-ray image to detect potential bone fractures. Our AI
+                system will analyze your image and highlight any detected fractures.
+            </p>
+        </div>
+        <div class="upload-section">
+            <div class="action-buttons">
+                <label for="imageUpload" class="custom-file-upload">Choose Image</label>
+                <input type="file" id="imageUpload" accept="image/*" onchange="previewImage()" style="display: none">
+                <button onclick="uploadImage()">Analyze Image</button>
+                <button onclick="clearImages()">Clear</button> <!-- Clear button -->
+            </div>
+        </div>
+        <div class="result-section">
+            <div id="progressBarContainer">
+                <div class="progress-text">Analyzing image...</div>
+                <div id="progressBar">
+                    <div></div>
+                </div>
+            </div>
+            <div id="result"></div>
+        </div>
+        <div class="image-container" id="imageContainer"></div>
+        <!-- <div class="result-section">
+            <div id="progressBarContainer">
+                <div class="progress-text">Analyzing image...</div>
+                <div id="progressBar">
+                    <div></div>
+                </div>
+            </div>
+            <div id="result"></div>
+        </div> -->
+    </div>
+    <script>
+        function previewImage() {
+            const input = document.getElementById("imageUpload");
+            const imageContainer = document.getElementById("imageContainer");
+            imageContainer.innerHTML = "";
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const imgWrapper = document.createElement("div");
+                    imgWrapper.className = "image-wrapper";
+                    const img = document.createElement("img");
+                    img.id = "uploadedImage";
+                    img.src = e.target.result;
+                    img.alt = "Uploaded Image";
+                    imgWrapper.appendChild(img);
+                    
+                    // Add label for input image
+                    const label = document.createElement("div");
+                    label.className = "image-label";
+                    label.textContent = "Input Image";
+                    imgWrapper.appendChild(label);
+                    
+                    imageContainer.appendChild(imgWrapper);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function uploadImage() {
+            const input = document.getElementById("imageUpload");
+            const result = document.getElementById("result");
+            const progressBarContainer = document.getElementById("progressBarContainer");
+            const progressBar = document.querySelector("#progressBar div");
+
+            if (!input.files.length) {
+                result.textContent = "Please upload an image first.";
+                return;
+            }
+
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function () {
+                const base64Image = reader.result.split(",")[1];
+                progressBarContainer.style.display = "block";
+                result.textContent = "";
+                progressBar.style.width = '0%';
+
+                try {
+                    const response = await axios.post(
+                        "https://detect.roboflow.com/bone-fracture-detection-daoon/1",
+                        base64Image,
+                        {
+                            params: { api_key: "8kEU5RYHM5OgUxmQZFvF" },
+                            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+                        }
+                    );
+
+                    const data = response.data;
+                    if (!data.predictions || data.predictions.length === 0) {
+                        result.textContent = "No fractures detected.";
+                        return;
+                    }
+
+                    const img = document.getElementById("uploadedImage");
+                    if (!img) {
+                        result.textContent = "Error displaying image.";
+                        return;
+                    }
+
+                    drawBoundingBox(img, data.predictions[0]);
+                    result.textContent = `Detected: ${data.predictions[0].class}`;
+
+                } catch (error) {
+                    result.textContent = `Error: ${error.message}`;
+                } finally {
+                    progressBar.style.width = '100%';
+                    setTimeout(() => {
+                        progressBarContainer.style.display = "none";
+                    }, 1000);
+                }
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function drawBoundingBox(image, prediction) {
+            const imageContainer = document.getElementById("imageContainer");
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Set canvas size to match the fixed size
+            canvas.width = 400; // Fixed width
+            canvas.height = 400; // Fixed height
+
+            // Draw the uploaded image on the canvas
+            const img = new Image();
+            img.src = image.src;
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 2;
+                const x = prediction.x - prediction.width / 2;
+                const y = prediction.y - prediction.height / 2;
+                ctx.strokeRect(x * (canvas.width / image.naturalWidth), y * (canvas.height / image.naturalHeight), prediction.width * (canvas.width / image.naturalWidth), prediction.height * (canvas.height / image.naturalHeight));
+                ctx.fillStyle = "red";
+                ctx.font = "16px Arial";
+                ctx.fillText(prediction.class, x * (canvas.width / image.naturalWidth), (y - 10) * (canvas.height / image.naturalHeight));
+            };
+
+            const imgWrapper = document.createElement("div");
+            imgWrapper.className = "image-wrapper";
+            imgWrapper.appendChild(canvas);
+            
+            // Add label for output image
+            const label = document.createElement("div");
+            label.className = "image-label";
+            label.textContent = "Output Image";
+            imgWrapper.appendChild(label);
+            
+            imageContainer.appendChild(imgWrapper);
+        }
+
+        function clearImages() {
+            const imageContainer = document.getElementById("imageContainer");
+            const result = document.getElementById("result");
+            const progressBarContainer = document.getElementById("progressBarContainer");
+
+            // Clear the image container and result text
+            imageContainer.innerHTML = "";
+            result.textContent = "";
+            progressBarContainer.style.display = "none";
+            document.getElementById("imageUpload").value = ""; // Clear the file input
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const uploadSection = document.querySelector(".upload-section");
+            uploadSection.style.opacity = "0";
+            setTimeout(() => {
+                uploadSection.style.opacity = "1";
+                uploadSection.style.transform = "translateY(0)";
+            }, 300);
+        });
+
+        const menuToggle = document.querySelector(".menu-toggle");
+        const nav = document.querySelector("nav");
+        const menuIcon = menuToggle.querySelector("i");
+
+        menuToggle.addEventListener("click", () => {
+            nav.classList.toggle("active");
+            menuIcon.classList.toggle("fa-bars");
+            menuIcon.classList.toggle("fa-times");
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!nav.contains(e.target) && !menuToggle.contains(e.target) && nav.classList.contains("active")) {
+                nav.classList.remove("active");
+                menuIcon.classList.remove("fa-times");
+                menuIcon.classList.add("fa-bars");
+            }
+        });
+
+        nav.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", () => {
+                nav.classList.remove("active");
+                menuIcon.classList.remove("fa-times");
+                menuIcon.classList.add("fa-bars");
+            });
+        });
+    </script>
+    <div class="footer">
+        <p>&copy; 2025 Bone Fracture Detection. All rights reserved.</p>
+    </div>
+</body>
+</html>
