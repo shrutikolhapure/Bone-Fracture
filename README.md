@@ -2,6 +2,7 @@ Technologies: Deep Learning, Python, Image Processing
 •	Built a system that detects bone fractures from X-ray images.
 •	Used deep learning techniques for image classification.
 •	Provided automated and faster preliminary fracture detection.
+scans the picture 
 
 ![Capture1](https://github.com/user-attachments/assets/65c9a76b-0abd-41dc-a1b8-65f72a5802c6)
 ![Capture2](https://github.com/user-attachments/assets/9e3e1042-cbb3-41dc-9b88-c7fd850d7980)
